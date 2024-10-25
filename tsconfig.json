@@ -10,6 +10,8 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
+    "lib": ["ES2021", "dom"],
+    "moduleResolution": "node", 
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
