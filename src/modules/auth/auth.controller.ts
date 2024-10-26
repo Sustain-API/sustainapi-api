@@ -29,6 +29,7 @@ export class AuthController {
         message: 'User registered successfully and tokens allocated',
         user: {
           id: user.id,
+          full_name: user.full_name,
           is_active: user.is_active,
           is_verified: user.is_verified,
           email: user.email,
