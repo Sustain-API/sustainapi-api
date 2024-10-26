@@ -30,6 +30,8 @@ async function bootstrap() {
 
   const PORT = Number(process.env.PORT) || 5000;
   const nodeEnv = process.env.NODE_ENV || "development";
+  
+  console.log(`Starting server on port ${PORT} in ${nodeEnv} mode...`);
 
   await app.listen(PORT, () =>
     console.log(`Application running in ${nodeEnv} mode on port ${PORT}`)
