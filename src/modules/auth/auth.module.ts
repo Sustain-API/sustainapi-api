@@ -2,11 +2,14 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { JwtStrategy } from './jwt.strategy'; // We'll create this strategy
+import { UserService } from '../user/user.service';
+import { UtilityService } from 'src/commom/util.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './user.entity'; // Import user entity
+import { User } from '../user/user.entity'; // Import user entity
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
+import { UserModule } from '../user/user.module'; // Import UserModule
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
@@ -14,14 +17,20 @@ import { AuthController } from './auth.controller';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'default_secret',
-        signOptions: { expiresIn: '1h' }, // Token expires in 1 hour
+      useFactory: () => ({
+       
       }),
     }),
+    UserModule,
     TypeOrmModule.forFeature([User]),
+    RedisModule,
   ],
-  providers: [AuthService, JwtStrategy], // Provide JwtStrategy and AuthService
-  controllers: [AuthController], // Attach AuthController
+  controllers: [AuthController],
+  providers: [
+    AuthService,
+    UserService,
+    UtilityService,
+  ],
+  exports: [AuthService],
 })
 export class AuthModule {}

@@ -47,6 +47,9 @@ describe('AuthController', () => {
         token_balance: 1000,
         created_at: new Date(),
         updated_at: new Date(),
+
+        hashPassword: jest.fn(),
+        isValidPassword: jest.fn().mockResolvedValue(true),
       };
 
       jest.spyOn(authService, 'register').mockResolvedValue(mockUser);

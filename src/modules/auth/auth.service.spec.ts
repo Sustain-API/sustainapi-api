@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { User } from './user.entity';
+import { User } from '../user/user.entity';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { JwtService } from '@nestjs/jwt'; // Import JwtService
+import { UserService } from '../user/user.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -22,6 +23,7 @@ describe('AuthService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
+        UserService,
         ConfigService,
         JwtService, // Provide JwtService to the testing module
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
@@ -58,6 +60,9 @@ describe('AuthService', () => {
         updated_at: new Date(),
         is_active: true,
         is_verified: false,
+
+        hashPassword: jest.fn(),
+        isValidPassword: jest.fn().mockResolvedValue(true),
       };
 
       // Mock user repository behavior
