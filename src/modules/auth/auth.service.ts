@@ -1,12 +1,15 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './user.entity';
+import { User } from '../user/user.entity';
 import { RegisterUserDto } from './dto/register-user.dto';
 import * as bcrypt from 'bcrypt';
 import Web3 from 'web3';  // Import Web3
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt'; // Import JwtService
+import { UserService } from '../user/user.service';
+import CommonUtil from '../../utils/commons.util';
+import { loginDto } from './dto/login-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +19,7 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private configService: ConfigService,
+    private readonly userService: UserService,
     private jwtService: JwtService // Inject JwtService
   ) {}
 
@@ -30,13 +34,13 @@ export class AuthService {
     }
 
     // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create a new user instance
     const newUser = this.userRepository.create({
       email,
       full_name,
-      password: hashedPassword,
+      password,
       wallet_address,
       token_balance: this.INITIAL_TOKEN_ALLOCATION, // Set initial token balance
     });
@@ -53,45 +57,49 @@ export class AuthService {
   }
 
   // Validate user credentials for login
-  async validateUser(email: string, password: string): Promise<User | null> {
-    const user = await this.userRepository.findOne({ where: { email } });
-    if (!user) {
-      return null;
-    }
+  // async validateUser(email: string, password: string): Promise<User | null> {
+  //   const user = await this.userRepository.findOne({ where: { email } });
+  //   if (!user) {
+  //     return null;
+  //   }
 
-    const isPasswordMatching = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatching) {
-      return null;
-    }
+  //   const isPasswordMatching = await bcrypt.compare(password, user.password);
+  //   if (!isPasswordMatching) {
+  //     return null;
+  //   }
 
-    return user;
-  }
+  //   return user;
+  // }
 
   // Login and generate JWT token for user
-  async login(email: string, password: string) {
-    // Validate user credentials
-    const user = await this.validateUser(email, password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+  async login(payload: loginDto) {
+    
+    try {
+      console.log("Payload: ", payload);
 
-    // Prepare the JWT payload with user email and ID
-    const payload = { email: user.email, sub: user.id };
+      // Check if user exists
+      const user = await this.userService.getUserByEmail(payload.email);
+      if (!user) {
+        throw new HttpException(
+          `User with email: ${payload.email} does not exist`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-    // Generate access token and refresh token
-    const access_token = this.jwtService.sign(payload, {
-      expiresIn: '1h',  // Token expires in 1 hour
-    });
+      // Validate password
+      const isValid = await user.isValidPassword(payload.password);
+      console.log("isValid: ", isValid);
+      if (!isValid) {
+        throw new HttpException("Incorrect email or password", HttpStatus.BAD_REQUEST);
+      }
 
-    const refresh_token = this.jwtService.sign(payload, {
-      expiresIn: '7d',  // Refresh token expires in 7 days
-    });
+      // Generate token using CommonUtil
+      const expiresIn = this.configService.getOrThrow("JWT_EXPIRES_IN");
+      const secretKey = this.configService.getOrThrow("JWT_SECRET");
+      const token = await CommonUtil.generateToken({ id: user.id }, expiresIn, secretKey);
 
-    // Return user details and tokens
-    return {
-      status: 'success',
-      message: 'Login successful',
-      data: {
+      // Return user and token
+      return { 
         user: {
           id: user.id,
           full_name: user.full_name,
@@ -101,13 +109,16 @@ export class AuthService {
           token_balance: user.token_balance,
           created_at: user.created_at,
           updated_at: user.updated_at,
-          last_login_at: new Date(), // You can save this in the database as well
+          last_login_at: new Date(),
         },
-        access_token,
-        refresh_token,
-      },
-    };
+        token 
+      };
+    } catch (error) {
+      console.error("authservice :: login error \n %o", error);
+      throw error;
+    }
   }
+
 
   // Interact with Ethereum contract using web3.js
   private async allocateTokensToWallet(walletAddress: string, amount: number) {

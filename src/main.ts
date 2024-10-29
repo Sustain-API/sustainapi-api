@@ -16,10 +16,13 @@ async function bootstrap() {
     .setDescription('API documentation for fpaychain')
     .setVersion('1.0')
     .addBearerAuth({
-      type: 'http',
-      scheme: 'bearer',
-      bearerFormat: 'JWT',
-    }, 'JWT-auth') // JWT auth setup in Swagger
+      type: "http",
+      scheme: "Bearer",
+      bearerFormat: "JWT",
+      description: "Enter JWT auth token",
+      in: "header",
+    })
+    .addTag("fpaychain-docs")
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -30,8 +33,6 @@ async function bootstrap() {
 
   const PORT = Number(process.env.PORT) || 5000;
   const nodeEnv = process.env.NODE_ENV || "development";
-  
-  console.log(`Starting server on port ${PORT} in ${nodeEnv} mode...`);
 
   await app.listen(PORT, () =>
     console.log(`Application running in ${nodeEnv} mode on port ${PORT}`)

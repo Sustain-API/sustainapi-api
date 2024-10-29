@@ -2,7 +2,7 @@ import { Controller, Post, Body, HttpCode, HttpStatus, UnauthorizedException, Ba
 import { ApiTags, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/register-user.dto';
-import { User } from './user.entity';
+import { User } from '../user/user.entity';
 import { loginDto } from './dto/login-user.dto';
 
 @ApiTags('Authentication')
@@ -44,33 +44,33 @@ export class AuthController {
     }
   }
 
-  // User Login Endpoint
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
-  @ApiResponse({
-    status: 200,
-    description: 'Login successful and tokens returned',
-  })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @ApiResponse({ status: 400, description: 'Bad Request' })
-  async login(@Body() loginDto: loginDto) {
-    const { email, password } = loginDto;
-
-    try {
-      // Authenticate the user and get tokens
-      const loginResponse = await this.authService.login(email, password);
-
-      return {
-        status_code: 200,
-        message: 'Login successful',
-        data: loginResponse.data,
-      };
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw new UnauthorizedException('Invalid credentials');
-      } else {
-        throw new BadRequestException('Login failed due to bad request');
-      }
-    }
-  }
-}
+   // User Login Endpoint
+   @Post('login')
+   @HttpCode(HttpStatus.OK)
+   @ApiResponse({
+     status: 200,
+     description: 'Login successful and tokens returned',
+   })
+   @ApiResponse({ status: 401, description: 'Invalid credentials' })
+   @ApiResponse({ status: 400, description: 'Bad Request' })
+   async login(
+    @Body() loginDto: loginDto) {
+     try {
+       // Authenticate the user and get tokens
+       const loginResponse = await this.authService.login(loginDto);
+ 
+       return {
+         status_code: HttpStatus.OK,
+         message: 'Login successful',
+         data: loginResponse,
+       };
+     } catch (error) {
+       console.error('UserController :: login error', error);
+       if (error instanceof UnauthorizedException) {
+         throw new UnauthorizedException('Invalid credentials');
+       } else {
+         throw new BadRequestException('Login failed due to bad request');
+       }
+     }
+   }
+ }
